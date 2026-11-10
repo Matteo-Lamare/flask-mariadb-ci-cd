@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
 
 jobs:
   docker:
@@ -25,11 +27,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/matteo-lamare/flask-mariadb-ci-cd
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/matteo-lamare/flask-mariadb-ci-cd:latest
-            ghcr.io/matteo-lamare/flask-mariadb-ci-cd:sha-${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
