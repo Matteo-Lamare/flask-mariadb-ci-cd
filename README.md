@@ -96,3 +96,5 @@ Lancer le conteneur :
 ```bash
 docker run -p 5000:5000 flask-mariadb-ci-cd
 ```
+
+Test de protection de la branche main.
