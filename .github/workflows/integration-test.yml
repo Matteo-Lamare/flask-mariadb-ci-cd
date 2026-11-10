@@ -1,0 +1,72 @@
+﻿name: Integration Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_DATABASE: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Start Flask application
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASSWORD: rootpassword
+          DB_NAME: test
+        run: |
+          python app.py > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Test database connection through HTTP
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:5000/ -o response.txt; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [ ! -f response.txt ]; then
+            echo "Flask application did not respond"
+            cat app.log
+            exit 1
+          fi
+
+          response=$(cat response.txt)
+
+          if [ "$response" != "Database Connection Status: Connected" ]; then
+            echo "Unexpected response: $response"
+            cat app.log
+            exit 1
+          fi
+
+          echo "Integration test passed"
