@@ -31,5 +31,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+            ghcr.io/matteo-lamare/flask-mariadb-ci-cd:latest
+            ghcr.io/matteo-lamare/flask-mariadb-ci-cd:sha-${{ github.sha }}
